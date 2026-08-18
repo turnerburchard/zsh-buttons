@@ -1,0 +1,20 @@
+# Copy to ~/.config/zsh-buttons/config.zsh and put your own commands in.
+#
+#   buttons_add <cmd>                 runs the command
+#   buttons_add <cmd> --arg <hint>    prefills the prompt instead of running
+#   buttons_add <cmd> --label <text>  display name, for commands too long for a box
+#   buttons_pin <cmd>                 always first, in the order pinned
+#
+# Display order is by usage over the last 30 days, refreshed once a day. This file's
+# order is the tiebreaker, and the fallback before there's any usage data.
+
+buttons_pin claude
+
+buttons_add claude
+buttons_add codex
+buttons_add 'git status'
+buttons_add 'git pull'
+buttons_add 'git checkout'      --arg '<branch>'
+buttons_add 'npm run dev'
+buttons_add 'npm test'
+buttons_add 'docker compose up' --label 'compose up'
