@@ -3,19 +3,27 @@
 Buttons for the commands you run most, drawn when you open a shell. Arrow over to one and hit enter.
 
 ```
-  ╭────────────────╮  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐
-  │     claude     │  │     codex      │  │   git status   │  │    git pull    │
-  │                │  │                │  │                │  │                │
-  ╰────────────────╯  └────────────────┘  └────────────────┘  └────────────────┘
-  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐
-  │  git checkout  │  │  npm run dev   │  │    npm test    │  │   compose up   │
-  │    <branch>    │  │                │  │                │  │                │
-  └────────────────┘  └────────────────┘  └────────────────┘  └────────────────┘
-  ←→ ↑↓ tab  ·  ⏎ run  ·  1-8 jump  ·  type to dismiss
+  ╭──────────────────────╮  ┌──────────────────────┐  ┌──────────────────────┐
+  │                      │  │                      │  │                      │
+  │        claude        │  │    login <input>     │  │       git pull       │
+  │                      │  │                      │  │                      │
+  ╰──────────────────────╯  └──────────────────────┘  └──────────────────────┘
+  ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐
+  │                      │  │                      │  │                      │
+  │       wts main       │  │         dev          │  │     wts <input>      │
+  │                      │  │                      │  │                      │
+  └──────────────────────┘  └──────────────────────┘  └──────────────────────┘
+  ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐
+  │                      │  │     wts <input>      │  │                      │
+  │     wtc <input>      │  │          &&          │  │       briefing       │
+  │                      │  │        claude        │  │                      │
+  └──────────────────────┘  └──────────────────────┘  └──────────────────────┘
+  ←→ ↑↓ tab  ·  ⏎ run  ·  1-9 jump  ·  type to dismiss
 ```
 
-They're ordered by how often you've actually run each one over the last 30 days, so whatever
-you're using this week drifts to the front and you don't have to remember an alias for it.
+Nine slots, ranked by how often you've actually run each one over the last 30 days. Whatever
+you're using this week drifts to the front, whatever you've stopped using drops off, and you
+don't have to remember an alias for any of it.
 
 zsh only. Tested in Ghostty, but it doesn't rely on anything Ghostty-specific.
 
@@ -41,7 +49,7 @@ Then write `~/.config/zsh-buttons/config.zsh`:
 buttons_add claude
 buttons_add codex
 buttons_add 'git status'
-buttons_add 'git checkout'      --arg '<branch>'
+buttons_add 'git checkout'      --arg
 buttons_add 'docker compose up' --label 'compose up'
 ```
 
@@ -51,17 +59,51 @@ There's a longer starting point in `config.example.zsh`.
 
 `buttons_add <cmd>` adds a button that runs the command.
 
-`--arg '<hint>'` means the command needs an argument, so enter prefills your prompt with
-`<cmd> ` instead of running it. The hint shows in the box.
+`--arg` means the command needs an argument, so enter prefills your prompt with `<cmd> `
+instead of running it. The box shows `<cmd> <input>`.
 
 `--label <text>` sets the display name, for commands too long to fit.
 
-`buttons_pin <cmd>` keeps a button first no matter how little you use it. It still needs its
-own `buttons_add` line.
+`buttons_pin <cmd>` keeps a button first no matter how little you use it, which is also how
+you protect a button you just added from being ranked off the grid before you've used it. It
+still needs its own `buttons_add` line.
 
 Arrows and tab move, enter picks, 1-9 jump straight to a button. Anything else dismisses the
 buttons and starts your prompt with whatever you typed, so you can open a shell and just start
 typing like normal.
+
+## Chains
+
+If you keep running two of your buttons back to back, the second one gets added to the first
+and the pair shows up as its own button:
+
+```
+  ┌──────────────────────┐
+  │     wts <input>      │
+  │          &&          │
+  │        claude        │
+  └──────────────────────┘
+```
+
+Enter on that one puts `wts  && claude` on your prompt with the cursor sitting where the
+branch name goes. Chains are found in your own history, so nothing appears that you didn't
+already put on a button yourself, and a chain you press keeps its own place in the ranking.
+
+## Follow-ups
+
+When a button has more than one thing you habitually do next, it can't pick one, so it offers
+them after the command finishes:
+
+```
+  ❯ wts main
+  ┌──────────────────────┐  ┌──────────────────────┐
+  │       git pull       │  │        claude        │
+  └──────────────────────┘  └──────────────────────┘
+  ←→ ⏎ run  ·  type to dismiss
+```
+
+This is why `git status` never offers anything. What you do after reading it depends on what
+it said, so no single command follows it often enough to count.
 
 ## Settings
 
@@ -69,9 +111,10 @@ Set these in `.zshrc` before sourcing, or in your config file. Defaults:
 
 ```zsh
 ZSH_BUTTONS_CMD=f                    # command to bring the buttons back
+ZSH_BUTTONS_SLOTS=9                  # buttons on the grid
 ZSH_BUTTONS_WINDOW_DAYS=30           # how far back usage counts
 ZSH_BUTTONS_REFRESH_HOURS=24         # how often the order is recalculated
-ZSH_BUTTONS_MAX_PER_ROW=4
+ZSH_BUTTONS_MAX_PER_ROW=3
 ZSH_BUTTONS_CONFIG=~/.config/zsh-buttons/config.zsh
 ZSH_BUTTONS_STATE=~/.local/share/zsh-buttons
 ```
@@ -84,7 +127,7 @@ you're working. Editing your config also triggers a recalculation.
 
 Every command you run gets appended to `$ZSH_BUTTONS_STATE/commands.log` along with a
 timestamp and the directory. It never leaves your machine, and deleting it just resets the
-ordering.
+ordering and forgets any chains.
 
 ## License
 
