@@ -18,7 +18,7 @@ Buttons for the commands you run most, drawn when you open a shell. Arrow over t
   │          gp          │  │       db-prod        │  │      git status      │
   │                      │  │                      │  │                      │
   └──────────────────────┘  └──────────────────────┘  └──────────────────────┘
-  ←→ ↑↓ tab  ·  ⏎ run  ·  1-9 jump  ·  type to dismiss
+  ←→ ↑↓ tab  ·  ⏎ run  ·  1-9 run  ·  type to dismiss
 ```
 
 Nine slots, filled from the commands you've actually run over the last 30 days. Counts decide
@@ -80,9 +80,9 @@ instead of running it. The box shows `<cmd> <input>`.
 
 In manual mode, a pinned command still needs its own `buttons_add` line.
 
-Arrows and tab move, enter picks, 1-9 jump straight to a button. Anything else dismisses the
-buttons and starts your prompt with whatever you typed, so you can open a shell and just start
-typing like normal.
+Arrows and tab move. Enter or a button's number activates it immediately. Other typing
+dismisses the buttons and starts your prompt with whatever you typed, so you can open a shell
+and just start typing like normal.
 
 ## Chains
 
@@ -111,7 +111,7 @@ finishes:
   ┌──────────────────────┐  ┌──────────────────────┐
   │       git pull       │  │        claude        │
   └──────────────────────┘  └──────────────────────┘
-  ←→ ⏎ run  ·  type to dismiss
+  ←→ ⏎ run  ·  1-2 run  ·  type to dismiss
 ```
 
 Automatic mode learns follow-ups among the current top nine. Manual mode learns them among

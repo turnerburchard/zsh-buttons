@@ -486,9 +486,9 @@ _zb_grid() {
   local at_prompt=$'\e]133;D\a\e]133;P;k=i\a\e]133;B\a'
 
   if (( allow_followup )); then
-    footer="←→ ↑↓ tab  ·  ⏎ run  ·  1-$(( n > 9 ? 9 : n )) jump  ·  type to dismiss"
+    footer="←→ ↑↓ tab  ·  ⏎ run  ·  1-$(( n > 9 ? 9 : n )) run  ·  type to dismiss"
   else
-    footer="←→ ⏎ run  ·  type to dismiss"
+    footer="←→ ⏎ run  ·  1-$(( n > 9 ? 9 : n )) run  ·  type to dismiss"
   fi
 
   trap 'printf "$erase$show" $height; return 130' INT
@@ -521,7 +521,13 @@ _zb_grid() {
           break
         fi
         ;;
-      [1-9]) (( key <= n )) && sel=$key ;;
+      [1-9])
+        if (( key <= n )); then
+          printf "$erase$show" $height
+          _zb_activate $key $allow_followup
+          return
+        fi
+        ;;
       $'\x03'|$'\x04') break ;;
       [[:print:]])
         # Whatever was typed behind this key is still queued on the tty, so ZLE reads
