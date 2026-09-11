@@ -33,7 +33,7 @@ close $zshrc
 
 proc start_shell {test_dir config_dir state_dir} {
   global spawn_id
-  spawn env ZDOTDIR=$test_dir XDG_CONFIG_HOME=[file dirname $config_dir] XDG_DATA_HOME=[file dirname $state_dir] LANG=en_US.UTF-8 TERM=xterm-256color zsh -i
+  spawn env ZDOTDIR=$test_dir XDG_CONFIG_HOME=[file dirname $config_dir] XDG_DATA_HOME=[file dirname $state_dir] LANG=en_US.UTF-8 TERM=xterm-256color zsh -o NO_GLOBAL_RCS -i
   expect {
     "type to dismiss" {}
     timeout { error "buttons did not render" }
@@ -105,7 +105,7 @@ set failed [catch {
 
   file delete [file join $config_dir config.zsh]
   file delete -force $state_dir
-  spawn env ZDOTDIR=$test_dir XDG_CONFIG_HOME=[file dirname $config_dir] XDG_DATA_HOME=[file dirname $state_dir] LANG=en_US.UTF-8 TERM=xterm-256color zsh -i
+  spawn env ZDOTDIR=$test_dir XDG_CONFIG_HOME=[file dirname $config_dir] XDG_DATA_HOME=[file dirname $state_dir] LANG=en_US.UTF-8 TERM=xterm-256color zsh -o NO_GLOBAL_RCS -i
   expect {
     "READY> " {}
     "type to dismiss" { error "fresh installation displayed buttons without command history" }
