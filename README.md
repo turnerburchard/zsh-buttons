@@ -1,6 +1,7 @@
 # zsh-buttons
 
-Buttons for the commands you run most, drawn when you open a shell. Arrow over to one and hit enter.
+Buttons for the commands you run most, drawn when you open a shell. Press a number to run one,
+or use the arrows and Enter.
 
 ```
   ╭──────────────────────╮  ┌──────────────────────┐  ┌──────────────────────┐
@@ -29,11 +30,13 @@ zsh only. Tested in Ghostty, but it doesn't rely on anything Ghostty-specific.
 
 ## Install
 
+You need zsh and `awk` to run it, plus Git to clone and update it. There is no build step.
+
 ```zsh
 git clone https://github.com/turnerburchard/zsh-buttons ~/.zsh-buttons
 ```
 
-Source it from the end of your `.zshrc`:
+Keep the whole checkout, including `lib/`. Add this at the end of your `.zshrc`:
 
 ```zsh
 source ~/.zsh-buttons/zsh-buttons.plugin.zsh
@@ -43,15 +46,34 @@ It has to go last, after anything that sets your shell up lazily (mise, nvm, fzf
 buttons draw on the first prompt, so a button pressed before your version manager has loaded
 runs against the wrong node. Plugin managers are fine as long as this is the last entry.
 
-No config is required. The first prompt builds the grid from the command log, which starts
-empty and fills as you work.
+Open a new terminal tab after saving `.zshrc`.
 
-An optional `~/.config/zsh-buttons/config.zsh` can pin or ignore exact commands:
+### First run
+
+No config is required. A fresh install has no buttons yet because the plugin starts its own
+command log. It does not import your existing shell history. Run a few commands as usual,
+then type `f` to open the grid. New shells also show the grid once commands are available.
+
+Press a button's number to activate it immediately, or use arrows and Enter. Typing a letter
+dismisses the grid and starts your normal prompt.
+
+Already use `f` for something else? Choose another name before the source line:
 
 ```zsh
-buttons_pin claude
+ZSH_BUTTONS_CMD=buttons
+source ~/.zsh-buttons/zsh-buttons.plugin.zsh
+```
+
+### Optional config
+
+Create `~/.config/zsh-buttons/config.zsh` to pin or ignore exact commands. For example:
+
+```zsh
+buttons_pin 'git status'
 buttons_ignore 'git pull'
 ```
+
+There is also a [config example](config.example.zsh) with manual-mode settings.
 
 Pinned commands stay first and are included even before they appear in the log. Ignored
 commands are removed from ranking. Start a sensitive command with a space to keep it out of
@@ -73,7 +95,7 @@ buttons_add 'docker compose up' --label 'compose up'
 
 `buttons_add <cmd>` adds a manual candidate that runs the command.
 
-`--arg` means the command needs an argument, so enter prefills your prompt with `<cmd> `
+`--arg` means the command needs an argument, so activating it prefills your prompt with `<cmd> `
 instead of running it. The box shows `<cmd> <input>`.
 
 `--label <text>` sets the display name, for commands too long to fit.
@@ -97,7 +119,7 @@ button:
   └──────────────────────┘
 ```
 
-Enter on that one puts `wts  && claude` on your prompt with the cursor sitting where the
+Activating that button puts `wts  && claude` on your prompt with the cursor sitting where the
 branch name goes. Automatic mode keeps the startup grid to nine literal commands, so chains
 do not take their slots.
 
@@ -142,13 +164,43 @@ Every command you run gets appended to `$ZSH_BUTTONS_STATE/commands.log` along w
 timestamp and the directory. It never leaves your machine, and deleting it just resets the
 ordering and forgets any chains.
 
-## Tests
+## Update or uninstall
 
-Run the ranking and interactive terminal tests with:
+To update:
+
+```zsh
+git -C ~/.zsh-buttons pull --ff-only
+```
+
+Open a new terminal tab to load the update.
+
+To uninstall, remove the source line from `.zshrc` and open a new terminal tab. You can then
+delete `~/.zsh-buttons`. Your config and command log stay in the paths listed above unless
+you delete them too.
+
+## Development
+
+The entry point stays `zsh-buttons.plugin.zsh`. It defines settings and config helpers,
+loads the internal modules, and registers shell hooks:
+
+- `lib/ranking.zsh`: command logging, ranking, and cache loading.
+- `lib/ui.zsh`: button drawing and keyboard input.
+- `lib/execution.zsh`: command execution, argument prefilling, and follow-ups.
+
+The modules share the existing `_zb_*` state. They are sourced into the current shell so
+buttons can use your aliases and functions, change directories, and update shell variables.
+
+### Tests
+
+Tests require zsh, `awk`, and Expect. Run them with:
 
 ```zsh
 zsh tests/run.zsh
 ```
+
+The suite covers ranking and interactive input, plus a fresh installation with no config or
+command log. Interactive tests copy the plugin into a temporary path containing spaces and check
+that a learned alias can call a function that changes the current shell's directory and variables.
 
 ## License
 

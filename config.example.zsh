@@ -5,7 +5,7 @@
 #
 # Automatic ranking is the default, so this file can be empty or absent.
 
-buttons_pin claude
+buttons_pin 'git status'
 buttons_ignore 'git pull'
 
 # Manual mode uses only commands added here:
