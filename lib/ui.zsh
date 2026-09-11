@@ -131,4 +131,3 @@ _zb_grid() {
 
   printf "$erase$show" $height
 }
-

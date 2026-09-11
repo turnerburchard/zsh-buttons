@@ -48,4 +48,3 @@ _zb_activate() {
     _zb_run "$head && $tail"
   fi
 }
-
