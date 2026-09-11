@@ -6,33 +6,72 @@ log_user 0
 set repo [file normalize [file join [file dirname [info script]] ..]]
 set temp_root /tmp
 if {[info exists env(TMPDIR)]} { set temp_root $env(TMPDIR) }
-set test_dir [exec mktemp -d "$temp_root/zsh-buttons-interactive.XXXXXX"]
+set test_dir [file normalize [exec mktemp -d "$temp_root/zsh-buttons-interactive.XXXXXX"]]
 set config_dir [file join $test_dir config zsh-buttons]
 set state_dir [file join $test_dir state zsh-buttons]
 file mkdir $config_dir $state_dir
+set install_dir [file join $test_dir {plugin checkout}]
+file mkdir $install_dir
+file copy [file join $repo zsh-buttons.plugin.zsh] [file join $repo lib] $install_dir
 
 set config [open [file join $config_dir config.zsh] w]
 puts $config {ZSH_BUTTONS_MODE=manual}
 puts $config "buttons_add 'print -r -- FIRST > $test_dir/first-ran' --label first"
 puts $config "buttons_add 'print -r -- SECOND > $test_dir/second-ran' --label second"
 puts $config {buttons_add 'print -r --' --arg --label argument}
+for {set i 4} {$i <= 9} {incr i} {
+  puts $config "buttons_add 'print -r -- $i > $test_dir/button-$i-ran' --label button-$i"
+}
 close $config
 
 set zshrc [open [file join $test_dir .zshrc] w]
 puts $zshrc {PROMPT='READY> '}
-puts $zshrc "source [file join $repo zsh-buttons.plugin.zsh]"
+puts $zshrc "buttons_test_cd() { cd '$test_dir'; BUTTONS_TEST_RAN=1; }"
+puts $zshrc {alias buttons_test_alias=buttons_test_cd}
+puts $zshrc "source '[file join $install_dir zsh-buttons.plugin.zsh]'"
 close $zshrc
 
 proc start_shell {test_dir config_dir state_dir} {
   global spawn_id
-  spawn env ZDOTDIR=$test_dir XDG_CONFIG_HOME=[file dirname $config_dir] XDG_DATA_HOME=[file dirname $state_dir] LANG=en_US.UTF-8 TERM=xterm-256color zsh -i
+  spawn env ZDOTDIR=$test_dir XDG_CONFIG_HOME=[file dirname $config_dir] XDG_DATA_HOME=[file dirname $state_dir] LANG=en_US.UTF-8 TERM=xterm-256color zsh -o NO_GLOBAL_RCS -i
   expect {
     "type to dismiss" {}
     timeout { error "buttons did not render" }
   }
 }
 
+log_file -a [file join $test_dir terminal.log]
+
 set failed [catch {
+  start_shell $test_dir $config_dir $state_dir
+  send "9"
+  expect {
+    "READY> " {}
+    timeout { error "number 9 did not activate without enter" }
+  }
+  if {![file exists [file join $test_dir button-9-ran]]} { error "number 9 did not run the ninth button" }
+  if {[file exists [file join $test_dir first-ran]]} { error "number 9 ran the first button" }
+  send "_zb_fu_for=(number-test); _zb_fu_cmd=('print -r -- SECOND > $test_dir/second-ran'); _zb_followup number-test\r"
+  expect {
+    "type to dismiss" {}
+    timeout { error "follow-up buttons did not render" }
+  }
+  send "9"
+  expect {
+    "type to dismiss" {}
+    "READY> " { error "unavailable number dismissed the follow-up grid" }
+    timeout { error "unavailable number did not leave the follow-up grid open" }
+  }
+  send "1"
+  expect {
+    "READY> " {}
+    timeout { error "follow-up number did not activate without enter" }
+  }
+  if {![file exists [file join $test_dir second-ran]]} { error "follow-up number did not run its button" }
+  file delete [file join $test_dir second-ran]
+  send "exit\r"
+  expect eof
+
   start_shell $test_dir $config_dir $state_dir
   send "\033\[C\r"
   expect "READY> "
@@ -42,7 +81,11 @@ set failed [catch {
   expect eof
 
   start_shell $test_dir $config_dir $state_dir
-  send "3\r"
+  send "3"
+  expect {
+    "READY> " {}
+    timeout { error "argument button did not prefill without enter" }
+  }
   expect "print -r --"
   send "ARGUMENT > '$test_dir/argument-ran'\r"
   expect "READY> "
@@ -59,7 +102,47 @@ set failed [catch {
   if {![file exists [file join $test_dir typed-through]]} { error "typed command did not pass through the grid" }
   send "exit\r"
   expect eof
+
+  file delete [file join $config_dir config.zsh]
+  file delete -force $state_dir
+  spawn env ZDOTDIR=$test_dir XDG_CONFIG_HOME=[file dirname $config_dir] XDG_DATA_HOME=[file dirname $state_dir] LANG=en_US.UTF-8 TERM=xterm-256color zsh -o NO_GLOBAL_RCS -i
+  expect {
+    "READY> " {}
+    "type to dismiss" { error "fresh installation displayed buttons without command history" }
+    timeout { error "fresh installation did not reach the prompt" }
+  }
+  send "buttons_test_alias\r"
+  expect {
+    "READY> " {}
+    timeout { error "shell alias did not return to the prompt" }
+  }
+  send " cd /; unset BUTTONS_TEST_RAN\r"
+  expect "READY> "
+  send "f\r"
+  expect {
+    "type to dismiss" {}
+    timeout { error "fresh installation did not learn the command" }
+  }
+  send "1"
+  expect {
+    "READY> " {}
+    timeout { error "learned alias did not activate" }
+  }
+  send " print -r -- \$PWD:\$BUTTONS_TEST_RAN > '$test_dir/shell-state'\r"
+  expect "READY> "
+  set state_file [open [file join $test_dir shell-state] r]
+  set shell_state [string trim [read $state_file]]
+  close $state_file
+  if {$shell_state ne "$test_dir:1"} { error "button did not preserve shell state: expected $test_dir:1, got $shell_state" }
+  send "exit\r"
+  expect eof
 } message]
+log_file
+if {$failed} {
+  set terminal_log [open [file join $test_dir terminal.log] r]
+  puts stderr [read $terminal_log]
+  close $terminal_log
+}
 file delete -force $test_dir
 if {$failed} { error $message }
 
