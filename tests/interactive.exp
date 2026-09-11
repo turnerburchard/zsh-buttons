@@ -40,6 +40,8 @@ proc start_shell {test_dir config_dir state_dir} {
   }
 }
 
+log_file -a [file join $test_dir terminal.log]
+
 set failed [catch {
   start_shell $test_dir $config_dir $state_dir
   send "9"
@@ -135,6 +137,12 @@ set failed [catch {
   send "exit\r"
   expect eof
 } message]
+log_file
+if {$failed} {
+  set terminal_log [open [file join $test_dir terminal.log] r]
+  puts stderr [read $terminal_log]
+  close $terminal_log
+}
 file delete -force $test_dir
 if {$failed} { error $message }
 
