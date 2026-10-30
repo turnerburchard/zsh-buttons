@@ -30,6 +30,13 @@ _zb_render() {
   local reset=$'\e[0m' dim=$'\e[2m'
   local bar='' spacer='' border name tl tr bl br REPLY
   local -a out
+  local directory=$PWD
+  if [[ $directory == "$HOME" || $directory == "$HOME/"* ]]; then
+    directory="~${directory#$HOME}"
+  fi
+  directory=${(V)directory}
+  print -r -- "  ${dim}${directory[1,$(( COLUMNS - 2 ))]}${reset}"
+  print
   repeat $inner bar+='─'
   repeat $gap spacer+=' '
 
@@ -68,7 +75,7 @@ _zb_grid() {
   local -i grid_rows=$(( (n + per_row - 1) / per_row ))
   # Rebalance so the rows come out even instead of leaving a stub row.
   per_row=$(( (n + grid_rows - 1) / grid_rows ))
-  local -i height=$(( grid_rows * (rows + 2) + 1 ))
+  local -i height=$(( grid_rows * (rows + 2) + 3 ))
   local -i sel=1 drawn=0
   local key footer erase=$'\e[%dA\e[J' show=$'\e[?25h'
   # Ghostty decides whether a process is running by whether the cursor sits in an
